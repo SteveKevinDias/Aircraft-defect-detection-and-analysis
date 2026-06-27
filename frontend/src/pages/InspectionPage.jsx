@@ -42,12 +42,16 @@ export default function InspectionPage() {
   }, [file, navigate]);
 
   useEffect(() => {
-    if (file && !autoRunInitiated) {
-      setAutoRunInitiated(true);
-      runDetection();
-      runHeatmap();
-      runReport();
-    }
+    const runSequence = async () => {
+      if (file && !autoRunInitiated) {
+        setAutoRunInitiated(true);
+        // Run sequentially to prevent PyTorch from causing an Out Of Memory (OOM) crash on Render free tier
+        await runDetection();
+        await runHeatmap();
+        await runReport();
+      }
+    };
+    runSequence();
   }, [file, autoRunInitiated]);
 
   const getRiskBadge = (risk) => {
