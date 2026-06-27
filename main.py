@@ -22,6 +22,9 @@ import numpy as np
 import cv2
 from PIL import Image
 import torch
+# Memory optimizations for cloud deployment (e.g. Render Free Tier)
+torch.set_num_threads(1)
+torch.set_grad_enabled(False)
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query
 from fastapi.staticfiles import StaticFiles
