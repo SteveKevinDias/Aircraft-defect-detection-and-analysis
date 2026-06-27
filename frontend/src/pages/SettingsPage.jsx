@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Save, CheckCircle } from 'lucide-react';
 
-const API_BASE = '';
+const API_BASE = 'https://aircraft-defect-detection-and-analysis.onrender.com';
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState('');

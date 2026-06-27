@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import { UploadCloud, CheckCircle, AlertTriangle, FileText, Download, Activity, ArrowLeft } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-const API_BASE = '';
+const API_BASE = 'https://aircraft-defect-detection-and-analysis.onrender.com';
 
 export default function InspectionPage() {
   const location = useLocation();

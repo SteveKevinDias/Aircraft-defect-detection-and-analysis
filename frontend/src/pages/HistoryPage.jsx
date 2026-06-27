@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { History, FileText } from 'lucide-react';
 
-const API_BASE = '';
+const API_BASE = 'https://aircraft-defect-detection-and-analysis.onrender.com';
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([]);
