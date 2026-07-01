@@ -17,3 +17,4 @@ matplotlib
 scikit-image
 scikit-learn
 tqdm
+streamlit
