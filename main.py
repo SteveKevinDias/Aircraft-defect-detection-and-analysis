@@ -552,8 +552,11 @@ if uploaded_file is not None:
             client = load_openai_client(st.session_state.api_key)
             if client:
                 try:
-                    # Convert original image to base64 for multimodal LLM tasks
-                    success, buf = cv2.imencode(".png", img_bgr)
+                    # Convert and resize original image for multimodal LLM tasks (keeps payload size minimal and reliable)
+                    h, w = img_bgr.shape[:2]
+                    scale = min(512 / w, 512 / h, 1.0)
+                    img_resized = cv2.resize(img_bgr, (int(w * scale), int(h * scale)))
+                    success, buf = cv2.imencode(".png", img_resized)
                     img_b64 = ""
                     if success:
                         img_b64 = base64.b64encode(buf.tobytes()).decode()
@@ -912,8 +915,14 @@ with tab_chat:
         for msg in st.session_state.chat_history:
             if msg["role"] == "system":
                 continue
-            if "Inspection data:" in msg["content"] and msg["role"] == "user":
-                continue
+            
+            # Skip initial multimodal user message and standard text user prompt
+            if msg["role"] == "user":
+                content = msg["content"]
+                if isinstance(content, list):
+                    continue
+                if isinstance(content, str) and "Inspection data:" in content:
+                    continue
             
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
