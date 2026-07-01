@@ -648,15 +648,22 @@ if uploaded_file is not None:
                 
                 pdf = FPDF()
                 pdf.add_page()
+                
                 pdf.set_font("Helvetica", "B", 16)
-                pdf.cell(0, 10, "EdgeVision - Aerospace Inspection Report", ln=True)
+                pdf.cell(190, 10, "EdgeVision - Aerospace Inspection Report")
+                pdf.ln(10)
+                
                 pdf.set_font("Helvetica", "", 10)
-                pdf.cell(0, 8, f"Image: {uploaded_file.name}", ln=True)
-                pdf.cell(0, 8, f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-                pdf.ln(4)
+                pdf.cell(190, 8, f"Image: {uploaded_file.name}")
+                pdf.ln(8)
+                
+                pdf.cell(190, 8, f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                pdf.ln(12)
                 
                 pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 8, "Visual Inspection Mapping", ln=True)
+                pdf.cell(190, 8, "Visual Inspection Mapping")
+                pdf.ln(8)
+                
                 img_w = 85
                 y0 = pdf.get_y()
                 pdf.image(orig_path, x=10, y=y0, w=img_w)
@@ -665,28 +672,32 @@ if uploaded_file is not None:
                 pdf.ln(img_w * 0.75 + 10)
 
                 pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 8, "Detected Defects", ln=True)
+                pdf.cell(190, 8, "Detected Defects")
+                pdf.ln(8)
+                
                 pdf.set_font("Helvetica", "", 10)
                 if detections:
                     for d in detections:
                         pdf.multi_cell(
-                            0, 6,
+                            190, 6,
                             f"- {d['class']} | conf {d['confidence']:.2f} | "
                             f"risk: {d['risk']} | size: {d['area_ratio'] * 100:.1f}%",
                         )
                 else:
-                    pdf.multi_cell(0, 6, "No defects detected above threshold.")
+                    pdf.multi_cell(190, 6, "No defects detected above threshold.")
                 
-                pdf.ln(2)
+                pdf.ln(4)
                 pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 8, "AI Maintenance Assistant Report", ln=True)
+                pdf.cell(190, 8, "AI Maintenance Assistant Report")
+                pdf.ln(8)
+                
                 pdf.set_font("Helvetica", "", 10)
                 
                 # Cleanup formatting for FPDF
                 clean_text = re.sub(r'[*#_`]', '', openai_report)
                 clean_text = clean_text.replace('- ', '  ')
                 clean_text = re.sub(r'[^\x00-\x7F]+', ' ', clean_text)
-                pdf.multi_cell(0, 6, clean_text)
+                pdf.multi_cell(190, 6, clean_text)
                 
                 pdf_name = f"inspection_{int(time.time())}.pdf"
                 pdf_full_path = REPORTS_DIR / pdf_name
