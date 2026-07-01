@@ -272,6 +272,37 @@ def load_openai_client(api_key: str):
 
 # ── Helper Functions ────────────────────────────────────────────────────
 
+def get_mro_estimates(class_name: str, risk: str):
+    risk_lower = risk.lower()
+    if risk_lower == "critical":
+        return {
+            "urgency": "🚨 AOG (Aircraft on Ground) - Dispatch Prohibited",
+            "hours": "12 - 36 Hours",
+            "cost": "$8,500 - $22,000",
+            "action": "Immediate grounding and structural engineering review required."
+        }
+    elif risk_lower == "high":
+        return {
+            "urgency": "⚠️ Inspect within 24 Hours",
+            "hours": "6 - 12 Hours",
+            "cost": "$2,500 - $7,500",
+            "action": "Schedule immediate hangar repair. Non-destructive testing (NDT) required."
+        }
+    elif risk_lower == "medium":
+        return {
+            "urgency": "⏰ Repair at next C-Check (Within 100 flight hours)",
+            "hours": "2 - 6 Hours",
+            "cost": "$800 - $2,500",
+            "action": "Log defect in logbook. Periodic monitoring required every pre-flight inspection."
+        }
+    else: # Low
+        return {
+            "urgency": "🔧 Routine Maintenance",
+            "hours": "0.5 - 2 Hours",
+            "cost": "$150 - $600",
+            "action": "Repair during next scheduled overnight line check."
+        }
+
 def estimate_risk(class_name: str, confidence: float, area_ratio: float) -> str:
     cls_lower = class_name.lower()
     score = 0
@@ -761,26 +792,66 @@ with tab_dashboard:
         requires_manual = False
         
         if results["detections"]:
-            for d in results["detections"]:
+            for idx, d in enumerate(results["detections"]):
                 # Check anomaly/low conf escalation
                 is_bg = "background" in d["class"].lower()
                 is_low_conf = d["confidence"] < 0.40
                 if is_bg or is_low_conf:
                     requires_manual = True
                 
-                risk_badge = f'<span class="badge badge-{d["risk"].lower()}">{d["risk"]}</span>'
-                st.markdown(f"""
-                    <div class="defect-item">
-                        <div class="defect-info">
-                            <span class="defect-title">{d["class"]}</span>
-                            <span class="defect-meta">Confidence: {d["confidence"]*100:.1f}% &nbsp;&bull;&nbsp; Relative Area: {d["area_ratio"]*100:.2f}%</span>
-                        </div>
-                        {risk_badge}
-                    </div>
-                """, unsafe_allow_html=True)
+                # Fetch estimates
+                estimates = get_mro_estimates(d["class"], d["risk"])
+                
+                # Crop defect image
+                cropped_img = None
+                if results["original_img"] and "bbox" in d:
+                    x1, y1, x2, y2 = d["bbox"]
+                    orig_w, orig_h = results["original_img"].size
+                    pad = 15
+                    x1_pad = max(0, x1 - pad)
+                    y1_pad = max(0, y1 - pad)
+                    x2_pad = min(orig_w, x2 + pad)
+                    y2_pad = min(orig_h, y2 + pad)
+                    
+                    try:
+                        cropped_img = results["original_img"].crop((x1_pad, y1_pad, x2_pad, y2_pad))
+                    except Exception:
+                        cropped_img = None
+
+                with st.expander(f"🔍 Defect #{idx+1}: {d['class'].upper()} ({d['risk']} Risk)"):
+                    col_crop, col_info = st.columns([1, 2])
+                    with col_crop:
+                        if cropped_img:
+                            st.image(cropped_img, caption=f"Cropped {d['class'].upper()} View", use_container_width=True)
+                        else:
+                            st.info("Cropped region unavailable.")
+                    with col_info:
+                        st.markdown(f"**Class Category:** `{d['class']}`")
+                        st.markdown(f"**Confidence Level:** `{d['confidence']*100:.1f}%` &nbsp;|&nbsp; **Relative Size:** `{d['area_ratio']*100:.2f}%` of image")
+                        st.markdown(f"**MRO Urgency Protocol:** {estimates['urgency']}")
+                        st.markdown(f"**Estimated Labor Hours:** `{estimates['hours']}`")
+                        st.markdown(f"**Estimated Material Cost:** `{estimates['cost']}`")
+                        st.markdown(f"**Recommended Maintenance Action:** *{estimates['action']}*")
         else:
             st.markdown('<p style="color:#10b981; font-weight:500;">No critical structural defects found above confidence threshold.</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # Defect Severity Distribution Chart
+        if results["detections"]:
+            st.markdown('<div class="glass-card" style="margin-top: 24px;">', unsafe_allow_html=True)
+            st.markdown('<div class="glass-header">📊 Defect Severity Distribution</div>', unsafe_allow_html=True)
+            try:
+                import pandas as pd
+                chart_data = pd.DataFrame([
+                    {
+                        "Defect": f"#{i+1} {d['class'].capitalize()}",
+                        "Confidence (%)": d["confidence"] * 100
+                    } for i, d in enumerate(results["detections"])
+                ])
+                st.bar_chart(chart_data, x="Defect", y="Confidence (%)", color="#3b82f6")
+            except Exception as e:
+                st.info(f"Visual chart loaded with placeholder data: {e}")
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # Manual Review / Escalation Alert Banner
         if requires_manual:
