@@ -11,3 +11,4 @@ openai
 fpdf2
 uvicorn
 python-dotenv
+streamlit
